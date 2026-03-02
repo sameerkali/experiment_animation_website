@@ -1,18 +1,54 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* global dark mode background and typography */
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --color-dark: #050505;
+  --color-darker: #020202;
+  --color-accent: #6366f1;
+  --color-accent-light: #818cf8;
+  --color-accent-violet: #8b5cf6;
+}
+
+html { scroll-behavior: smooth; }
+
 body {
   margin: 0;
+  font-family: var(--font-sans);
   background-color: #050505;
-  font-family: 'Inter', sans-serif;
+  color: rgba(255,255,255,0.6);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  color: rgba(255, 255, 255, 0.9);
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+
+.text-gradient {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-p {
-  color: rgba(255, 255, 255, 0.6);
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
+
+.glow-accent {
+  box-shadow: 0 0 20px rgba(99,102,241,0.3), 0 0 60px rgba(99,102,241,0.1);
+}
+
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-shimmer { background-size: 200% 100%; animation: shimmer 3s ease-in-out infinite; }
