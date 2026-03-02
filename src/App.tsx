@@ -1,8 +1,12 @@
 
+import ChipScroll from './components/ChipScroll';
+
 const App = () => {
   return (
-    <div className="bg-red-700 text-2xl">App</div>
-  )
-}
+    <div className="overflow-hidden">
+      <ChipScroll />
+    </div>
+  );
+};
 
-export default App
+export default App;

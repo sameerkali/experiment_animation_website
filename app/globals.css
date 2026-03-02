@@ -2,9 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* global dark mode background and typography */
 body {
-  margin: 0;
   background-color: #050505;
   font-family: 'Inter', sans-serif;
 }
