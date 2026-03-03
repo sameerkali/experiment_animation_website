@@ -13,6 +13,12 @@ const ChipScroll = () => {
   const formatIndex = (i: number) => String(i).padStart(3, '0');
   const framePath = (i: number) => `/sequence/ezgif-frame-${formatIndex(i)}.jpg`;
 
+  // Helper to get current viewport dimensions (handles mobile toolbar resize issues)
+  const getViewportDimensions = () => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
+
   // preload all frames
   useEffect(() => {
     let loaded = 0;
@@ -28,12 +34,14 @@ const ChipScroll = () => {
         if (canvas) {
           const ctx = canvas.getContext('2d');
           const ratio = window.devicePixelRatio || 1;
-          canvas.width = window.innerWidth * ratio;
-          canvas.height = window.innerHeight * ratio;
-          canvas.style.width = `${window.innerWidth}px`;
-          canvas.style.height = `${window.innerHeight}px`;
+          const { width, height } = getViewportDimensions();
+          
+          canvas.width = width * ratio;
+          canvas.height = height * ratio;
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
           ctx?.scale(ratio, ratio);
-          drawImageContain(ctx, img, window.innerWidth, window.innerHeight);
+          drawImageContain(ctx, img, width, height);
         }
       }
       if (loaded === FRAME_COUNT) {
@@ -64,7 +72,10 @@ const ChipScroll = () => {
     const imgRatio = img.naturalWidth / img.naturalHeight;
     const canvasRatio = canvasWidth / canvasHeight;
     
-    let drawWidth, drawHeight, x, y;
+    let drawWidth: number, 
+        drawHeight: number, 
+        x: number, 
+        y: number;
 
     if (imgRatio > canvasRatio) {
       // Image is wider than canvas - fit to width
@@ -95,7 +106,7 @@ const ChipScroll = () => {
     const clamped = Math.min(FRAME_COUNT - 1, Math.max(0, idx));
     const img = images[clamped];
     
-    // Get CSS pixel dimensions
+    // Get CSS pixel dimensions (handles mobile viewport changes)
     const cssWidth = canvas.clientWidth;
     const cssHeight = canvas.clientHeight;
     
@@ -112,45 +123,91 @@ const ChipScroll = () => {
     }
   }, [images, frameIndex]);
 
-  // resize canvas on window resize
+  // resize canvas on window resize with mobile optimizations
   useEffect(() => {
+    let resizeTimeout: ReturnType<typeof setTimeout>;
+    let isMounted = true;
+
     const handleResize = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const ratio = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * ratio;
-      canvas.height = window.innerHeight * ratio;
-      canvas.style.width = `${window.innerWidth}px`;
-      canvas.style.height = `${window.innerHeight}px`;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.scale(ratio, ratio);
-        const idx = Math.floor(frameIndex.get());
-        drawFrame(idx);
-      }
+      // Debounce resize for mobile performance
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        if (!isMounted) return;
+        
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        
+        const ratio = window.devicePixelRatio || 1;
+        const { width, height } = getViewportDimensions();
+        
+        // Only resize if dimensions actually changed (prevents mobile toolbar jitter)
+        if (canvas.clientWidth !== width || canvas.clientHeight !== height) {
+          canvas.width = width * ratio;
+          canvas.height = height * ratio;
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+          
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.scale(ratio, ratio);
+            const idx = Math.floor(frameIndex.get());
+            drawFrame(idx);
+          }
+        }
+      }, 100); // 100ms debounce
     };
+
+    // Use resize observer for more accurate container sizing
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    // Handle orientation change specifically
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(resizeTimeout);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
   }, [frameIndex, images]);
 
   return (
     <section
       ref={containerRef}
-      className="relative h-[500vh] w-full bg-[#050505]"
+      className="relative h-[500vh] w-full bg-[#050505] touch-pan-y"
       id="hero-animation"
     >
-      {/* Loading spinner */}
+      {/* Loading spinner - Mobile optimized */}
       {loading && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-[#050505]">
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-[#050505] px-4">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-14 h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-sm text-white/40 tracking-widest uppercase">Loading frames…</p>
+            <div className="w-10 h-10 sm:w-14 sm:h-14 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-xs sm:text-sm text-white/40 tracking-widest uppercase text-center">
+              Loading frames…
+            </p>
           </div>
         </div>
       )}
 
-      {/* Sticky canvas — sticks to viewport while scrolling through the 500vh container */}
-      <canvas ref={canvasRef} className="sticky top-0 h-screen w-full" />
+      {/* Sticky canvas - Mobile optimized with proper touch handling */}
+      <canvas 
+        ref={canvasRef} 
+        className="sticky top-0 h-[100dvh] w-full touch-none"
+        style={{ 
+          // Prevent iOS elastic scrolling issues
+          WebkitOverflowScrolling: 'touch',
+          // Ensure canvas doesn't capture touch events that should scroll
+          pointerEvents: 'none' 
+        }}
+      />
 
     </section>
   );
