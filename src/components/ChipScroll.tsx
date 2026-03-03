@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import {  useScroll, useTransform } from 'framer-motion';
 
 const ChipScroll = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [images, setImages] = useState<HTMLImageElement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [imgDimensions, setImgDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [ setImgDimensions] = useState<{ width: number; height: number } | null>(null);
 
   const FRAME_COUNT = 240;
 
